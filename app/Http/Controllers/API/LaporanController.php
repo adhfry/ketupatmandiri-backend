@@ -12,10 +12,20 @@ class LaporanController extends Controller
 {
     use ApiResponse;
 
+    private function appendFotoUrl(Laporan $laporan): Laporan
+    {
+        $laporan->foto_url = $laporan->foto
+            ? url(Storage::disk('public')->url($laporan->foto))
+            : null;
+
+        return $laporan;
+    }
+
     // Menampilkan daftar laporan milik user yang sedang login
     public function index(Request $request)
     {
         $laporans = Laporan::where('user_id', $request->user()->id)->orderBy('created_at', 'desc')->get();
+        $laporans->transform(fn(Laporan $laporan) => $this->appendFotoUrl($laporan));
         return $this->sendResponse($laporans, 'Berhasil mengambil data laporan');
     }
 
@@ -50,6 +60,8 @@ class LaporanController extends Controller
             'status'    => 'menunggu',
         ]);
 
+        $laporan = $this->appendFotoUrl($laporan);
+
         return $this->sendResponse($laporan, 'Laporan berhasil dibuat', 201);
     }
 
@@ -61,6 +73,8 @@ class LaporanController extends Controller
         if (! $laporan) {
             return $this->sendError('Laporan tidak ditemukan', 404);
         }
+
+        $laporan = $this->appendFotoUrl($laporan);
 
         return $this->sendResponse($laporan, 'Berhasil mengambil detail laporan');
     }
@@ -98,6 +112,8 @@ class LaporanController extends Controller
         }
 
         $laporan->update($request->only(['judul', 'deskripsi', 'latitude', 'longitude']));
+
+        $laporan = $this->appendFotoUrl($laporan);
 
         return $this->sendResponse($laporan, 'Laporan berhasil diupdate');
     }
